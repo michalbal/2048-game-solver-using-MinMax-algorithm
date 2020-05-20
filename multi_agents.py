@@ -37,6 +37,12 @@ class ReflexAgent(Agent):
         return legal_moves[chosen_index]
 
     def evaluation_function(self, current_game_state, action):
+        # Useful information you can extract from a GameState (game_state.py)
+
+        successor_game_state = current_game_state.generate_successor(action=action)
+        board = successor_game_state.board
+        max_tile = successor_game_state.max_tile
+        score = successor_game_state.score
         """
         Design a better evaluation function here.
 
@@ -44,15 +50,26 @@ class ReflexAgent(Agent):
         GameStates (GameState.py) and returns a number, where higher numbers are better.
 
         """
-
-        # Useful information you can extract from a GameState (game_state.py)
-
-        successor_game_state = current_game_state.generate_successor(action=action)
-        board = successor_game_state.board
-        max_tile = successor_game_state.max_tile
-        score = successor_game_state.score
-
         "*** YOUR CODE HERE ***"
+        # # on 100 games:
+        # # {512: 12, 256: 51, 128: 32, 64: 5}
+        # # {512: 13, 256: 49, 128: 36, 64: 1, 32: 1}
+        # if action == Action.LEFT: return score + max_tile
+        # if action == Action.DOWN: return score + max_tile
+        # if action == Action.UP: return score + max_tile/2
+        # if action == Action.RIGHT: return score + 0
+        #
+        #
+        # # on 100 games:
+        # # {512: 3, 256: 51, 128: 38, 64: 8},
+        # # {512: 4, 256: 47, 128: 40, 64: 8, 32: 1}
+        #
+        # if action == Action.LEFT: return 5
+        # if action == Action.DOWN: return 4
+        # if action == Action.UP: return 3
+        # if action == Action.RIGHT: return 2
+        # return 0
+
         return score
 
 
@@ -91,8 +108,42 @@ class MultiAgentSearchAgent(Agent):
         return
 
 
-
 class MinmaxAgent(MultiAgentSearchAgent):
+
+    def max_value(self, state, action, depth, agent_index):
+        """
+        Max - our part of the minimax algo
+        :param state: game state
+        :param action: action that lead to this state
+        :param depth: depth of the game (1, 2, etc)
+        :param agent_index: 0, our player
+        :return: max of the minimums of cost
+        """
+        if depth == self.depth or state.done or action == Action.STOP:
+            return self.evaluation_function(state)
+        v = float('-inf')
+        for new_action in state.get_legal_actions(agent_index):
+            successor = state.generate_successor(agent_index, new_action)
+            v = max(v, self.min_value(successor, new_action, depth + 0.5, (agent_index + 1) % 2))
+        return v
+
+    def min_value(self, state, action, depth, agent_index):
+        """
+        Min - adversary's part of the minimax algo
+        :param state: game state
+        :param action: action that lead to this state
+        :param depth: half-depth (0.5, 1.5, etc)
+        :param agent_index: 1, adversary
+        :return: min of the maximums of cost
+        """
+        if depth == self.depth or state.done or action == Action.STOP:
+            return self.evaluation_function(state)
+        v = float('inf')
+        for new_action in state.get_legal_actions(agent_index):
+            successor = state.generate_successor(agent_index, new_action)
+            v = min(v, self.max_value(successor, new_action, depth + 0.5, (agent_index + 1) % 2))
+        return v
+
     def get_action(self, game_state):
         """
         Returns the minimax action from the current gameState using self.depth
@@ -111,10 +162,21 @@ class MinmaxAgent(MultiAgentSearchAgent):
             Returns the successor game state after an agent takes an action
         """
         """*** YOUR CODE HERE ***"""
-        util.raiseNotDefined()
+        no_actions = True
+        max_value = 0
+        best_action = Action.STOP
+        for action in game_state.get_legal_actions(0):
+            successor = game_state.generate_successor(0, action)
+            # half a step in depth to min
+            value = self.min_value(successor, action, 0.5, agent_index=1)
 
-
-
+            # if it's the first successor, save it as maximal, else compare to current max
+            if no_actions or value > max_value:
+                no_actions = False
+                max_value = value
+                best_action = action
+        # return best action, STOP if there were no legal moves
+        return best_action
 
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
