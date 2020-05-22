@@ -184,9 +184,11 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
     Your minimax agent with alpha-beta pruning (question 3)
     """
 
-    def alpha_beta_helper(self, state, depth, alpha, beta, default, player):
+    def alpha_beta_helper(self, state, depth, alpha, beta, player):
 
         if depth == 0 or state.done:
+            print("Depth is ", depth)
+            print("Returning evaluation function, value is ", self.evaluation_function(state))
             return self.evaluation_function(state)
 
         for action in state.get_legal_actions(player):
@@ -194,13 +196,12 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
             if player == 0:
                 # Max
                 alpha = max(alpha, self.alpha_beta_helper(successor, depth - 1,
-                                                          alpha, beta,default, 1))
+                                                          alpha, beta, 1))
             else:
                 # Min
-                beta = min(alpha, self.alpha_beta_helper(successor, depth - 1,
-                                                         alpha, beta, default, 0))
-
-            if alpha != default and beta != default and beta <= alpha:
+                beta = min(beta, self.alpha_beta_helper(successor, depth - 1,
+                                                         alpha, beta, 0))
+            if beta <= alpha:
                 break
         # Max
         if player == 0:
@@ -208,48 +209,23 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         # Min
         return beta
 
-        # Max
-        # if player == 0:
-        #     for action in state.get_agent_legal_actions():
-        #         successor = state.generate_successor(player, action)
-        #         alpha = max(alpha, self.alpha_beta_helper(
-        #             successor, depth - 1, alpha, beta, default, 1))
-        #         if alpha != default and beta != default and  beta <= alpha:
-        #             break
-        #     return alpha
-        #
-        # # Min
-        # if player == 1:
-        #     for action in state.get_opponent_legal_actions():
-        #         successor = state.generate_successor(player, action)
-        #         beta = min(alpha, self.alpha_beta_helper(
-        #             successor, depth - 1, alpha, beta, default, 1))
-        #         if alpha != default and beta != default and  beta <= alpha:
-        #             break
-        #     return beta
-
-
-
     def get_action(self, game_state):
         """
         Returns the minimax action using self.depth and self.evaluationFunction
         """
-        min_value = 0.1
+        max_value = float('-inf')
         index = 0
+        depth = self.depth * 2
         for action in game_state.get_legal_actions(0):
             successor = game_state.generate_successor(0, action)
             value = self.alpha_beta_helper(
-                successor, self.depth - 1, 0.1, 0.1, 0.1, 1)
-            if min_value == 0.1:
-                min_value = value
+                successor, depth - 1, float('-inf'), float('inf'), 1)
+            if max_value < value:
+                max_value = value
                 index = action
-            else:
-                if min_value > value:
-                    min_value = value
-                    index = action
-        # @TODO make sure our evaluation function returns ints
+        if index == 0:
+            return Action.STOP
         return Action(index)
-
 
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
