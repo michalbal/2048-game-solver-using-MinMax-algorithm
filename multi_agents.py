@@ -28,7 +28,7 @@ class ReflexAgent(Agent):
 
         # Choose one of the best actions
         scores = [self.evaluation_function(game_state, action) for action in legal_moves]
-        print(scores, legal_moves)
+        # print(scores, legal_moves)
         best_score = max(scores)
         best_indices = [index for index in range(len(scores)) if scores[index] == best_score]
         chosen_index = np.random.choice(best_indices)  # Pick randomly among the best
@@ -36,6 +36,48 @@ class ReflexAgent(Agent):
         "Add more of your code here if you want to"
 
         return legal_moves[chosen_index]
+
+    def occupied_corner(self, board):
+        if board[0, 0] != 0:
+            return 0, 0
+        if board[0, board.shape[1]-1] != 0:
+            return 0, board.shape[1]-1
+        if board[board.shape[0]-1, 0] != 0:
+            return board.shape[0]-1, 0
+        if board[board.shape[0]-1, board.shape[1]-1] != 0:
+            return board.shape[0]-1, board.shape[1]-1
+        return -1, -1
+
+    def count_corners(self, board):
+        count = 0
+        if board[0, 0] != 0:
+            count += 1
+        if board[0, board.shape[1]-1] != 0:
+            count += 1
+        if board[board.shape[0]-1, 0] != 0:
+            count += 1
+        if board[board.shape[0]-1, board.shape[1]-1] != 0:
+            count += 1
+        if count == 0:
+            return float('inf')
+        return count
+
+    def calc_max_distance_from_corner(self, board):
+        # Find occupied corner
+        corner_x, corner_y = self.occupied_corner(board)
+        if corner_x == -1:
+            return float('inf')
+        return 0
+        # One corner is occupied, lets find the max distance from it
+        max_distance = 0
+        for x in range(board.shape[0]):
+            for y in range(board.shape[1]):
+                if board[x, y] != 0:
+                    distance = np.sqrt((y - corner_y) ** 2 + (x - corner_x) ** 2)
+                    if distance > max_distance:
+                        max_distance = distance
+        return max_distance
+
 
     def evaluation_function(self, current_game_state, action):
         # Useful information you can extract from a GameState (game_state.py)
@@ -52,10 +94,14 @@ class ReflexAgent(Agent):
 
         """
         "*** YOUR CODE HERE ***"
-        if score == 0 or score == 4:
-            print(board, "\n", score, current_game_state.score)
-        return score
-
+        rather_big_tile = 4
+        sum = 0
+        while rather_big_tile <= max_tile:
+            sum += (rather_big_tile ** 2) * len(np.where(board == rather_big_tile)[0])# @TODO what happens when no tiles of this kind
+            rather_big_tile = rather_big_tile * 2
+        max_distance = self.calc_max_distance_from_corner(board)
+        # print("max distance is ", max_distance * max_tile)
+        return score + sum - self.count_corners(board) * max_tile
 
 def score_evaluation_function(current_game_state):
     """
