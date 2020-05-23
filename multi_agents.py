@@ -32,7 +32,6 @@ class ReflexAgent(Agent):
         best_score = max(scores)
         best_indices = [index for index in range(len(scores)) if scores[index] == best_score]
         chosen_index = np.random.choice(best_indices)  # Pick randomly among the best
-
         "Add more of your code here if you want to"
 
         return legal_moves[chosen_index]
@@ -40,23 +39,23 @@ class ReflexAgent(Agent):
     def occupied_corner(self, board):
         if board[0, 0] != 0:
             return 0, 0
-        if board[0, board.shape[1]-1] != 0:
-            return 0, board.shape[1]-1
-        if board[board.shape[0]-1, 0] != 0:
-            return board.shape[0]-1, 0
-        if board[board.shape[0]-1, board.shape[1]-1] != 0:
-            return board.shape[0]-1, board.shape[1]-1
+        if board[0, board.shape[1] - 1] != 0:
+            return 0, board.shape[1] - 1
+        if board[board.shape[0] - 1, 0] != 0:
+            return board.shape[0] - 1, 0
+        if board[board.shape[0] - 1, board.shape[1] - 1] != 0:
+            return board.shape[0] - 1, board.shape[1] - 1
         return -1, -1
 
     def count_corners(self, board):
         count = 0
         if board[0, 0] != 0:
             count += 1
-        if board[0, board.shape[1]-1] != 0:
+        if board[0, board.shape[1] - 1] != 0:
             count += 1
-        if board[board.shape[0]-1, 0] != 0:
+        if board[board.shape[0] - 1, 0] != 0:
             count += 1
-        if board[board.shape[0]-1, board.shape[1]-1] != 0:
+        if board[board.shape[0] - 1, board.shape[1] - 1] != 0:
             count += 1
         if count == 0:
             return float('inf')
@@ -78,7 +77,6 @@ class ReflexAgent(Agent):
                         max_distance = distance
         return max_distance
 
-
     def evaluation_function(self, current_game_state, action):
         # Useful information you can extract from a GameState (game_state.py)
 
@@ -94,14 +92,38 @@ class ReflexAgent(Agent):
 
         """
         "*** YOUR CODE HERE ***"
-        rather_big_tile = 4
-        sum = 0
-        while rather_big_tile <= max_tile:
-            sum += (rather_big_tile ** 2) * len(np.where(board == rather_big_tile)[0])# @TODO what happens when no tiles of this kind
-            rather_big_tile = rather_big_tile * 2
-        max_distance = self.calc_max_distance_from_corner(board)
-        # print("max distance is ", max_distance * max_tile)
-        return score + sum - self.count_corners(board) * max_tile
+        # rather_big_tile = 4
+        # sum = 0
+        # while rather_big_tile <= max_tile:
+        #     sum += (rather_big_tile ** 2) * len(np.where(board == rather_big_tile)[0])# @TODO what happens when no tiles of this kind
+        #     rather_big_tile = rather_big_tile * 2
+        # max_distance = self.calc_max_distance_from_corner(board)
+        # # print("max distance is ", max_distance * max_tile)
+        # return score + sum - self.count_corners(board) * max_tile
+        return fun(successor_game_state)
+
+
+def fun(current_game_state):
+    board = current_game_state.board
+    max_tile = current_game_state.max_tile
+    value = 0
+    if board[3][3] == max_tile:
+        value += 200
+    if board[2][3] != 0:
+        value += np.log2(board[2][3])
+    if board[3][2] != 0:
+        value += np.log2(board[3][2])
+    if board[2][2] != 0:
+        value += np.log2(board[2][2]) / 4
+    empty = 0
+    for i in range(len(board)):
+        for j in range(len(board[0])):
+            if board[i][j] == 0:
+                empty += 1
+    value += empty / 16
+    # print(value)
+    return value
+
 
 def score_evaluation_function(current_game_state):
     """
@@ -217,8 +239,8 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
     def alpha_beta_helper(self, state, depth, alpha, beta, player):
 
         if depth == 0 or state.done:
-            # print("Depth is ", depth)
-            # print("Returning evaluation function, value is ", self.evaluation_function(state))
+            print("Depth is ", depth)
+            print("Returning evaluation function, value is ", self.evaluation_function(state))
             return self.evaluation_function(state)
 
         for action in state.get_legal_actions(player):
@@ -325,7 +347,51 @@ def better_evaluation_function(current_game_state):
     DESCRIPTION: <write something here so we know what you did>
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    board = current_game_state.board
+    max_tile = current_game_state.max_tile
+    score = current_game_state.score
+
+    sum = 0
+    empty = 0
+    same = 0
+    for i in range(len(board)):
+        for j in range(len(board[0])):
+            if board[i][j] == 0:
+                empty += 1
+            if j != len(board) - 1:
+                if board[i][j] != 0 and board[i][j + 1] != 0:
+                    diff = np.absolute(board[i][j] - board[i][j + 1])
+                    if diff == 0:
+                        same += board[i][j]
+                    if board[i][j] > board[i][j + 1]:
+                        sum += diff
+                    else:
+                        sum += diff / 2
+            if i != len(board) - 1:
+                if board[i][j] != 0 and board[i + 1][j] != 0:
+                    diff = np.absolute(board[i][j] - board[i + 1][j])
+                    if diff == 0:
+                        same += board[i][j]
+                    if board[i][j] > board[i + 1][j]:
+                        sum += diff
+                    else:
+                        sum += diff / 2
+
+    # print(sum/max_tile, same/max_tile, sum)
+
+    # seed = 1
+    # run 1:
+    # ---- {2048: 2, 1024: 4, 512: 4}
+    # return -(sum/max_tile)
+
+    # run 2:
+    # ---- {4096: 2, 2048: 7, 1024: 1}
+    return empty / 16 - (sum / max_tile)
+
+    # #run 3:
+    # ---- {4096: 1, 2048: 7, 1024: 2}
+    # return empty/16 + same/(max_tile/2) - (sum/max_tile)
 
 
 # Abbreviation

@@ -53,7 +53,7 @@ def create_agent(args):
     return agent
 
 
-def main():
+def main(aaa=-1):
     parser = argparse.ArgumentParser(description='2048 game.')
     parser.add_argument('--random_seed', help='The seed for the random state.', default=numpy.random.randint(100), type=int)
     displays = ['GUI', 'SummaryDisplay']
@@ -69,7 +69,12 @@ def main():
     parser.add_argument('--evaluation_function', help='The evaluation function for ai agent.',
                         default='score_evaluation_function', type=str)
     args = parser.parse_args()
-    numpy.random.seed(args.random_seed)
+
+    if aaa == -1:
+        numpy.random.seed(args.random_seed)  #ORIGINAL, DO NOT DELETE
+    else:
+        numpy.random.seed(aaa)
+
     if args.display != displays[0]:
         display = util.lookup('displays.' + args.display, globals())()
     else:
@@ -93,5 +98,14 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    # main()
+
+    for i in range(5):
+        print("random seed =", i)
+        main(i)
+
+    for i in range(5):
+        print("real random, run#", i)
+        main(-1)
+
     input("Press Enter to continue...")
