@@ -28,6 +28,7 @@ class ReflexAgent(Agent):
 
         # Choose one of the best actions
         scores = [self.evaluation_function(game_state, action) for action in legal_moves]
+        print(scores, legal_moves)
         best_score = max(scores)
         best_indices = [index for index in range(len(scores)) if scores[index] == best_score]
         chosen_index = np.random.choice(best_indices)  # Pick randomly among the best
@@ -51,25 +52,8 @@ class ReflexAgent(Agent):
 
         """
         "*** YOUR CODE HERE ***"
-        # # on 100 games:
-        # # {512: 12, 256: 51, 128: 32, 64: 5}
-        # # {512: 13, 256: 49, 128: 36, 64: 1, 32: 1}
-        # if action == Action.LEFT: return score + max_tile
-        # if action == Action.DOWN: return score + max_tile
-        # if action == Action.UP: return score + max_tile/2
-        # if action == Action.RIGHT: return score + 0
-        #
-        #
-        # # on 100 games:
-        # # {512: 3, 256: 51, 128: 38, 64: 8},
-        # # {512: 4, 256: 47, 128: 40, 64: 8, 32: 1}
-        #
-        # if action == Action.LEFT: return 5
-        # if action == Action.DOWN: return 4
-        # if action == Action.UP: return 3
-        # if action == Action.RIGHT: return 2
-        # return 0
-
+        if score == 0 or score == 4:
+            print(board, "\n", score, current_game_state.score)
         return score
 
 
@@ -187,8 +171,8 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
     def alpha_beta_helper(self, state, depth, alpha, beta, player):
 
         if depth == 0 or state.done:
-            print("Depth is ", depth)
-            print("Returning evaluation function, value is ", self.evaluation_function(state))
+            # print("Depth is ", depth)
+            # print("Returning evaluation function, value is ", self.evaluation_function(state))
             return self.evaluation_function(state)
 
         for action in state.get_legal_actions(player):
@@ -200,7 +184,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
             else:
                 # Min
                 beta = min(beta, self.alpha_beta_helper(successor, depth - 1,
-                                                         alpha, beta, 0))
+                                                        alpha, beta, 0))
             if beta <= alpha:
                 break
         # Max
@@ -233,6 +217,36 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
     Your expectimax agent (question 4)
     """
 
+    def max_value(self, state, action, depth, agent_index):
+        """
+        Player
+        """
+        if depth == self.depth or state.done or action == Action.STOP:
+            return self.evaluation_function(state)
+        v = float('-inf')
+        for new_action in state.get_legal_actions(agent_index):
+            successor = state.generate_successor(agent_index, new_action)
+            v = max(v, self.exp_value(successor, new_action, depth + 0.5, (agent_index + 1) % 2))
+        return v
+
+    def exp_value(self, state, action, depth, agent_index):
+        """
+        Adversary
+        uniform random legal move
+        """
+        if depth == self.depth or state.done or action == Action.STOP:
+            return self.evaluation_function(state)
+
+        actions = state.get_legal_actions(agent_index)
+        if len(actions) == 0:
+            return float('inf')
+
+        v = 0
+        for new_action in actions:
+            successor = state.generate_successor(agent_index, new_action)
+            v += self.max_value(successor, new_action, depth + 0.5, (agent_index + 1) % 2)
+        return v / len(actions)  # uniform probability to get the action
+
     def get_action(self, game_state):
         """
         Returns the expectimax action using self.depth and self.evaluationFunction
@@ -241,10 +255,21 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         """*** YOUR CODE HERE ***"""
-        util.raiseNotDefined()
+        no_actions = True
+        max_value = 0
+        best_action = Action.STOP
+        for action in game_state.get_legal_actions(0):
+            successor = game_state.generate_successor(0, action)
+            # half a step in depth to min
+            value = self.exp_value(successor, action, 0.5, agent_index=1)
 
-
-
+            # if it's the first successor, save it as maximal, else compare to current max
+            if no_actions or value > max_value:
+                no_actions = False
+                max_value = value
+                best_action = action
+        # return best action, STOP if there were no legal moves
+        return best_action
 
 
 def better_evaluation_function(current_game_state):
