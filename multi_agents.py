@@ -36,47 +36,6 @@ class ReflexAgent(Agent):
 
         return legal_moves[chosen_index]
 
-    def occupied_corner(self, board):
-        if board[0, 0] != 0:
-            return 0, 0
-        if board[0, board.shape[1] - 1] != 0:
-            return 0, board.shape[1] - 1
-        if board[board.shape[0] - 1, 0] != 0:
-            return board.shape[0] - 1, 0
-        if board[board.shape[0] - 1, board.shape[1] - 1] != 0:
-            return board.shape[0] - 1, board.shape[1] - 1
-        return -1, -1
-
-    def count_corners(self, board):
-        count = 0
-        if board[0, 0] != 0:
-            count += 1
-        if board[0, board.shape[1] - 1] != 0:
-            count += 1
-        if board[board.shape[0] - 1, 0] != 0:
-            count += 1
-        if board[board.shape[0] - 1, board.shape[1] - 1] != 0:
-            count += 1
-        if count == 0:
-            return float('inf')
-        return count
-
-    def calc_max_distance_from_corner(self, board):
-        # Find occupied corner
-        corner_x, corner_y = self.occupied_corner(board)
-        if corner_x == -1:
-            return float('inf')
-        return 0
-        # One corner is occupied, lets find the max distance from it
-        max_distance = 0
-        for x in range(board.shape[0]):
-            for y in range(board.shape[1]):
-                if board[x, y] != 0:
-                    distance = np.sqrt((y - corner_y) ** 2 + (x - corner_x) ** 2)
-                    if distance > max_distance:
-                        max_distance = distance
-        return max_distance
-
     def evaluation_function(self, current_game_state, action):
         # Useful information you can extract from a GameState (game_state.py)
 
@@ -91,38 +50,26 @@ class ReflexAgent(Agent):
         GameStates (GameState.py) and returns a number, where higher numbers are better.
 
         """
-        "*** YOUR CODE HERE ***"
-        # rather_big_tile = 4
-        # sum = 0
-        # while rather_big_tile <= max_tile:
-        #     sum += (rather_big_tile ** 2) * len(np.where(board == rather_big_tile)[0])# @TODO what happens when no tiles of this kind
-        #     rather_big_tile = rather_big_tile * 2
-        # max_distance = self.calc_max_distance_from_corner(board)
-        # # print("max distance is ", max_distance * max_tile)
-        # return score + sum - self.count_corners(board) * max_tile
-        return fun(successor_game_state)
-
-
-def fun(current_game_state):
-    board = current_game_state.board
-    max_tile = current_game_state.max_tile
-    value = 0
-    if board[3][3] == max_tile:
-        value += 200
-    if board[2][3] != 0:
-        value += np.log2(board[2][3])
-    if board[3][2] != 0:
-        value += np.log2(board[3][2])
-    if board[2][2] != 0:
-        value += np.log2(board[2][2]) / 4
-    empty = 0
-    for i in range(len(board)):
-        for j in range(len(board[0])):
-            if board[i][j] == 0:
-                empty += 1
-    value += empty / 16
-    # print(value)
-    return value
+        value = 0
+        # Influence of conscentraiting around one corner
+        if board[3][3] == max_tile:
+            value += 2048
+        if board[2][3] != 0:
+            value += np.log2(board[2][3])
+        if board[3][2] != 0:
+            value += np.log2(board[3][2])
+        if board[2][2] != 0:
+            value += np.log2(board[2][2]) / 4
+        num_of_empty_tiles = len(successor_game_state.get_empty_tiles()[0])
+        value += num_of_empty_tiles / 16
+        # Having mostly large value tiles
+        sum = 0
+        rather_big_tile = 32
+        while rather_big_tile <= max_tile:
+            sum += rather_big_tile * len(np.where(board == rather_big_tile)[0])
+            rather_big_tile = rather_big_tile * 2
+        value += sum
+        return value
 
 
 def score_evaluation_function(current_game_state):
