@@ -186,8 +186,8 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
     def alpha_beta_helper(self, state, depth, alpha, beta, player):
 
         if depth == 0 or state.done:
-            print("Depth is ", depth)
-            print("Returning evaluation function, value is ", self.evaluation_function(state))
+            # print("Depth is ", depth)
+            # print("Returning evaluation function, value is ", self.evaluation_function(state))
             return self.evaluation_function(state)
 
         for action in state.get_legal_actions(player):
@@ -302,6 +302,10 @@ def better_evaluation_function(current_game_state):
     sum = 0
     empty = 0
     same = 0
+    max_where = 0
+    if board[3][3] == max_tile:
+        max_where = 1
+
     for i in range(len(board)):
         for j in range(len(board[0])):
             if board[i][j] == 0:
@@ -310,36 +314,39 @@ def better_evaluation_function(current_game_state):
                 if board[i][j] != 0 and board[i][j + 1] != 0:
                     diff = np.absolute(board[i][j] - board[i][j + 1])
                     if diff == 0:
+                        # same += np.log2(board[i][j])
                         same += board[i][j]
                     if board[i][j] > board[i][j + 1]:
                         sum += diff
                     else:
                         sum += diff / 2
+
             if i != len(board) - 1:
                 if board[i][j] != 0 and board[i + 1][j] != 0:
                     diff = np.absolute(board[i][j] - board[i + 1][j])
                     if diff == 0:
+                        # same += np.log2(board[i][j])
                         same += board[i][j]
                     if board[i][j] > board[i + 1][j]:
                         sum += diff
                     else:
                         sum += diff / 2
 
-    # print(sum/max_tile, same/max_tile, sum)
+    # optimal WEIGHTS for now: (on seed 1, where was the lowest when w_max was 0)
+    w_monotone = -1/max_tile  # if down or right there is smth bigger - this penalty ("sum")
+    w_empty = 1/32  # number of empty
+    w_same = 0  # same tile is close-by
+    w_max = 5/max_tile  # max tile is in right lower corner (if 0 score drops from 30k to 6k on
+                        # seed 1)
 
-    # seed = 1
-    # run 1:
-    # ---- {2048: 2, 1024: 4, 512: 4}
-    # return -(sum/max_tile)
+    # CURRENT ATTEMPTS
+    # w_monotone = -1/max_tile
+    # w_empty = 1/32
+    # w_same = 1/max_tile
+    # w_max = board[3][3]/max_tile
 
-    # run 2:
-    # ---- {4096: 2, 2048: 7, 1024: 1}
-    return empty / 16 - (sum / max_tile)
-
-    # #run 3:
-    # ---- {4096: 1, 2048: 7, 1024: 2}
-    # return empty/16 + same/(max_tile/2) - (sum/max_tile)
-
+    # print("%2.2f %2.2f %2.2f %2.2f "% (empty*w_empty, sum*w_monotone, same*w_same, max_where*w_max))
+    return empty*w_empty + sum*w_monotone + same*w_same + max_where*w_max
 
 # Abbreviation
 better = better_evaluation_function
