@@ -20,15 +20,14 @@ class ReflexAgent(Agent):
 
         get_action chooses among the best options according to the evaluation function.
 
-        get_action takes a game_state and returns some Action.X for some X in the set {UP, DOWN, LEFT, RIGHT, STOP}
+        get_action takes a game_state and returns some Action.X for some X in the set {UP, DOWN,
+        LEFT, RIGHT, STOP}
         """
-
         # Collect legal moves and successor states
         legal_moves = game_state.get_agent_legal_actions()
 
         # Choose one of the best actions
         scores = [self.evaluation_function(game_state, action) for action in legal_moves]
-        # print(scores, legal_moves)
         best_score = max(scores)
         best_indices = [index for index in range(len(scores)) if scores[index] == best_score]
         chosen_index = np.random.choice(best_indices)  # Pick randomly among the best
@@ -38,7 +37,6 @@ class ReflexAgent(Agent):
 
     def evaluation_function(self, current_game_state, action):
         # Useful information you can extract from a GameState (game_state.py)
-
         successor_game_state = current_game_state.generate_successor(action=action)
         board = successor_game_state.board
         max_tile = successor_game_state.max_tile
@@ -51,7 +49,7 @@ class ReflexAgent(Agent):
 
         """
         value = 0
-        # Influence of conscentraiting around one corner
+        # Influence of concentrating around one corner
         if board[3][3] == max_tile:
             value += 2048
         if board[2][3] != 0:
@@ -186,8 +184,6 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
     def alpha_beta_helper(self, state, depth, alpha, beta, player):
 
         if depth == 0 or state.done:
-            # print("Depth is ", depth)
-            # print("Returning evaluation function, value is ", self.evaluation_function(state))
             return self.evaluation_function(state)
 
         for action in state.get_legal_actions(player):
@@ -291,20 +287,21 @@ def better_evaluation_function(current_game_state):
     """
     Your extreme 2048 evaluation function (question 5).
 
-    DESCRIPTION: <write something here so we know what you did>
+    DESCRIPTION: (complementary to the README.txt):
+    WEIGHTS:
+    w_monotone - if down or right the neighbour is bigger add penalty ("non_monotone")
+    w_empty - number of empty tiles on the board (bonus for each empty tile)
+    w_max - max tile should be located in right lower corner of the board (bonus if yes,
+    nothing if not)
+    Weights are fractions to see easier how they compare to each other.
     """
     "*** YOUR CODE HERE ***"
-
     board = current_game_state.board
     max_tile = current_game_state.max_tile
-    score = current_game_state.score
 
-    sum = 0
+    non_monotone = 0
     empty = 0
-    same = 0
     max_where = 0
-    if board[3][3] == max_tile:
-        max_where = 1
 
     for i in range(len(board)):
         for j in range(len(board[0])):
@@ -313,40 +310,29 @@ def better_evaluation_function(current_game_state):
             if j != len(board) - 1:
                 if board[i][j] != 0 and board[i][j + 1] != 0:
                     diff = np.absolute(board[i][j] - board[i][j + 1])
-                    if diff == 0:
-                        # same += np.log2(board[i][j])
-                        same += board[i][j]
                     if board[i][j] > board[i][j + 1]:
-                        sum += diff
+                        non_monotone += diff
                     else:
-                        sum += diff / 2
+                        non_monotone += diff / 2
 
             if i != len(board) - 1:
                 if board[i][j] != 0 and board[i + 1][j] != 0:
                     diff = np.absolute(board[i][j] - board[i + 1][j])
-                    if diff == 0:
-                        # same += np.log2(board[i][j])
-                        same += board[i][j]
                     if board[i][j] > board[i + 1][j]:
-                        sum += diff
+                        non_monotone += diff
                     else:
-                        sum += diff / 2
+                        non_monotone += diff / 2
 
-    # optimal WEIGHTS for now: (on seed 1, where was the lowest when w_max was 0)
-    w_monotone = -1/max_tile  # if down or right there is smth bigger - this penalty ("sum")
-    w_empty = 1/32  # number of empty
-    w_same = 0  # same tile is close-by
-    w_max = 5/max_tile  # max tile is in right lower corner (if 0 score drops from 30k to 6k on
-                        # seed 1)
+    if board[len(board) - 1][len(board[0]) - 1] == max_tile:
+        max_where = 1
 
-    # CURRENT ATTEMPTS
-    # w_monotone = -1/max_tile
-    # w_empty = 1/32
-    # w_same = 1/max_tile
-    # w_max = board[3][3]/max_tile
+    # WEIGHTS
+    w_monotone = -1 / max_tile
+    w_empty = 1 / 32
+    w_max = 5 / max_tile
 
-    # print("%2.2f %2.2f %2.2f %2.2f "% (empty*w_empty, sum*w_monotone, same*w_same, max_where*w_max))
-    return empty*w_empty + sum*w_monotone + same*w_same + max_where*w_max
+    return empty * w_empty + non_monotone * w_monotone + max_where * w_max
+
 
 # Abbreviation
 better = better_evaluation_function
